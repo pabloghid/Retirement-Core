@@ -1,0 +1,35 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  retirement-core:
+    build: .
+    container_name: retirement-core
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app 
+      - ./data:/data
+    environment:
+      - DATABASE_URL=sqlite:////data/retirement.db
+    command: >
+      uvicorn app:app 
+      --host 0.0.0.0 
+      --port 8000 
+      --reload
+    restart: unless-stopped
+
+  retirement-simulator:
+    build: ../retirement-simulator 
+    container_name: retirement-simulator
+    ports:
+      - "8001:8001" # Porta diferente para não dar conflito
+    volumes:
+      - ../retirement-simulator:/app
+    environment:
+      - DATABASE_URL=sqlite:////data/retirement.db
+    command: uvicorn app:app --host 0.0.0.0 --port 8001 --reload
+    restart: unless-stopped
+
+volumes:
+  data:
