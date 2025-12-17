@@ -20,12 +20,12 @@ services:
     restart: unless-stopped
 
   retirement-simulator:
-    build: ../retirement-simulator 
+    build: ../Retirement-Simulator
     container_name: retirement-simulator
     ports:
       - "8001:8001" # Porta diferente para não dar conflito
     volumes:
-      - ../retirement-simulator:/app
+      - ../Retirement-Simulator:/app
     environment:
       - DATABASE_URL=sqlite:////data/retirement.db
     command: uvicorn app:app --host 0.0.0.0 --port 8001 --reload

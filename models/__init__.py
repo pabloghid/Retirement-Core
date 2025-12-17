@@ -7,6 +7,7 @@ import os
 from models.base import Base
 from models.user import User
 from models.portfolio import Portfolio, PortfolioPositions
+from models.finances import UserIncome, UserExpense, ExpenseCategory
 
 db_path = "data/"
 # Verifica se o diretorio não existe

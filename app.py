@@ -1,5 +1,7 @@
 from fastapi import FastAPI
-from models import Session, User, Portfolio, PortfolioPositions
+from models import (
+    Session, User, Portfolio, PortfolioPositions, UserIncome, UserExpense, ExpenseCategory
+)
 from schemas import *
 
 app = FastAPI(
@@ -121,7 +123,13 @@ def delete_user_portfolio(user_id: int):
     except Exception as e:
         print(f"Erro ao deletar portfólio: {e}")
         return {"error": "Falha ao deletar portfólio"}
-    
+
+@app.get("/users/{user_id}/portfolio/positions", tags=["portfolio"])
+def read_portfolio_positions(user_id: int):
+    session = Session()
+    positions = session.query(PortfolioPositions).join(Portfolio).filter(Portfolio.user_id == user_id).all()
+    return [position.to_dict() for position in positions]
+
 @app.post("/users/{user_id}/portfolio/positions", tags=["portfolio"])
 def add_portfolio_position(user_id: int, asset: str, percentage: float):
     try:
@@ -141,3 +149,125 @@ def add_portfolio_position(user_id: int, asset: str, percentage: float):
     except Exception as e:
         print(f"Erro ao adicionar posição ao portfólio: {e}")
         return {"error": "Falha ao adicionar posição ao portfólio"}
+
+@app.get("/users/{user_id}/incomes", tags=["finances"])
+def read_user_incomes(user_id: int):
+    session = Session()
+    incomes = session.query(UserIncome).filter(UserIncome.user_id == user_id).all()
+    return [income.to_dict() for income in incomes]
+
+@app.post("/users/{user_id}/incomes", tags=["finances"])
+def add_user_income(user_id: int, amount: float, source: str): 
+    try:
+        session = Session()
+        new_income = UserIncome(
+            user_id=user_id,
+            amount=amount,
+            source=source
+        )
+        session.add(new_income)
+        session.commit()
+        session.refresh(new_income)
+        return new_income.to_dict()
+    except Exception as e:
+        print(f"Erro ao adicionar renda do usuário: {e}")
+        return {"error": "Falha ao adicionar renda do usuário"}
+
+@app.put("/users/{user_id}/incomes/{income_id}", tags=["finances"])
+def update_user_income(user_id: int, income_id: int, amount: float, source: str):
+    try:
+        session = Session()
+        income = session.query(UserIncome).filter(UserIncome.id == income_id, UserIncome.user_id == user_id).first()
+        if not income:
+            return {"error": "Renda não encontrada"}
+        income.amount = amount
+        income.source = source
+        session.commit()
+        return income.to_dict()
+    except Exception as e:
+        print(f"Erro ao atualizar renda do usuário: {e}")
+        return {"error": "Falha ao atualizar renda do usuário"}
+
+@app.delete("/users/{user_id}/incomes/{income_id}", tags=["finances"])
+def delete_user_income(user_id: int, income_id: int):
+    try:
+        session = Session()
+        income = session.query(UserIncome).filter(UserIncome.id == income_id, UserIncome.user_id == user_id).first()
+        if not income:
+            return {"error": "Renda não encontrada"}
+        session.delete(income)
+        session.commit()
+        return {"message": "Renda deletada com sucesso"}
+    except Exception as e:
+        print(f"Erro ao deletar renda do usuário: {e}")
+        return {"error": "Falha ao deletar renda do usuário"}
+
+@app.get("/users/{user_id}/expenses", tags=["finances"])
+def read_user_expenses(user_id: int):
+    session = Session()
+    expenses = session.query(UserExpense).filter(UserExpense.user_id == user_id).all()
+    return [expense.to_dict() for expense in expenses]
+
+@app.post("/users/{user_id}/expenses", tags=["finances"])
+def add_user_expense(user_id: int, amount: float, category: str):
+    try:
+        session = Session()
+        category_enum = None
+        category = category.lower()
+        try:
+            category_enum = ExpenseCategory[category]
+        except KeyError:
+            try:
+                category_enum = ExpenseCategory[category.lower()]
+            except Exception:
+                category_enum = ExpenseCategory.other
+        new_expense = UserExpense(
+            user_id=user_id,
+            amount=amount,
+            category=category_enum
+        )
+        session.add(new_expense)
+        session.commit()
+        session.refresh(new_expense)
+        return new_expense.to_dict()
+    except Exception as e:
+        print(f"Erro ao adicionar despesa do usuário: {e}")
+        return {"error": "Falha ao adicionar despesa do usuário"}
+    
+@app.put("/users/{user_id}/expenses/{expense_id}", tags=["finances"])
+def update_user_expense(user_id: int, expense_id: int, amount: float, category: str):
+    try:
+        session = Session()
+        expense = session.query(UserExpense).filter(UserExpense.id == expense_id, UserExpense.user_id == user_id).first()
+        if not expense:
+            return {"error": "Despesa não encontrada"}
+        try:
+            category_enum = ExpenseCategory[category]
+        except KeyError:
+            try:
+                category_enum = ExpenseCategory[category.lower()]
+            except Exception:
+                category_enum = ExpenseCategory.other
+                
+        expense.amount = amount
+        expense.category = category_enum
+
+        session.commit()
+        return expense.to_dict()
+    except Exception as e:
+        print(f"Erro ao atualizar despesa do usuário: {e}")
+        return {"error": "Falha ao atualizar despesa do usuário"}
+
+@app.delete("/users/{user_id}/expenses/{expense_id}", tags=["finances"])
+def delete_user_expense(user_id: int, expense_id: int):
+    try:
+        session = Session()
+        expense = session.query(UserExpense).filter(UserExpense.id == expense_id, UserExpense.user_id == user_id).first()
+        if not expense:
+            return {"error": "Despesa não encontrada"}
+        session.delete(expense)
+        session.commit()
+        return {"message": "Despesa deletada com sucesso"}
+    except Exception as e:
+        print(f"Erro ao deletar despesa do usuário: {e}")
+        return {"error": "Falha ao deletar despesa do usuário"}
