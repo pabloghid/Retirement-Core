@@ -131,7 +131,7 @@ def read_portfolio_positions(user_id: int):
     return [position.to_dict() for position in positions]
 
 @app.post("/users/{user_id}/portfolio/positions", tags=["portfolio"])
-def add_portfolio_position(user_id: int, asset: str, percentage: float):
+def add_portfolio_position(user_id: int, asset: str, amount: float):
     try:
         session = Session()
         portfolio = session.query(Portfolio).filter(Portfolio.user_id == user_id).first()
@@ -140,7 +140,7 @@ def add_portfolio_position(user_id: int, asset: str, percentage: float):
         new_position = PortfolioPositions(
             portfolio_id=portfolio.id,
             asset=asset,
-            percentage=percentage
+            amount=amount
         )
         session.add(new_position)
         session.commit()

@@ -52,7 +52,6 @@ class UserExpense(Base):
         self.user_id = user_id
         self.amount = amount
         if isinstance(category, str):
-            # accept either enum value ('food') or enum name ('FOOD' / 'Food')
             try:
                 self.category = ExpenseCategory(category)
             except ValueError:
