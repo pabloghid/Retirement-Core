@@ -131,16 +131,22 @@ def read_portfolio_positions(user_id: int):
     return [position.to_dict() for position in positions]
 
 @app.post("/users/{user_id}/portfolio/positions", tags=["portfolio"])
-def add_portfolio_position(user_id: int, asset: str, amount: float):
+def add_portfolio_position(user_id: int, asset: str, amount: float, indexer: str):
     try:
         session = Session()
         portfolio = session.query(Portfolio).filter(Portfolio.user_id == user_id).first()
         if not portfolio:
             return {"error": "Portfólio não encontrado"}
+        
+        indexer=indexer.lower()
+        if indexer not in ['ibov', 'ipca', 'selic']:
+            return {"error": "Indexador inválido. Use 'ibov', 'ipca' ou 'selic'."}
+        
         new_position = PortfolioPositions(
             portfolio_id=portfolio.id,
             asset=asset,
-            amount=amount
+            amount=amount,
+            indexer=indexer
         )
         session.add(new_position)
         session.commit()

@@ -32,14 +32,15 @@ class PortfolioPositions(Base):
     portfolio_id = Column(Integer, ForeignKey('portfolios.id'), nullable=False)
     asset = Column(String(100))
     amount = Column(Float)
-    indexer = Column(Enum('IBOV', 'IPCA', 'SELIC', name='indexer_enum'), nullable=False)
+    indexer = Column(Enum('ibov', 'ipca', 'selic', name='indexer_enum'), nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
     updated_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc), onupdate=datetime.datetime.now(datetime.timezone.utc))
 
-    def __init__(self, portfolio_id: int, asset: str, amount: float):
+    def __init__(self, portfolio_id: int, asset: str, amount: float, indexer: str):
         self.portfolio_id = portfolio_id
         self.asset = asset
         self.amount = amount
+        self.indexer = indexer
 
     def to_dict(self):
         return {
@@ -47,6 +48,7 @@ class PortfolioPositions(Base):
             "portfolio_id": self.portfolio_id,
             "asset": self.asset,
             "amount": self.amount,
+            "indexer": self.indexer,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
         }
