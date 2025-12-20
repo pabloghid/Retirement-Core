@@ -3,5 +3,4 @@ sqlalchemy
 requests
 pydantic
 uvicorn
-pytest
 sqlalchemy_utils

@@ -3,6 +3,8 @@ from models import (
     Session, User, Portfolio, PortfolioPositions, UserIncome, UserExpense, ExpenseCategory
 )
 from schemas import *
+from services.simulation import summarize_sim
+import requests
 
 app = FastAPI(
     title="API Principal Aposentadoria",
@@ -277,3 +279,105 @@ def delete_user_expense(user_id: int, expense_id: int):
     except Exception as e:
         print(f"Erro ao deletar despesa do usuário: {e}")
         return {"error": "Falha ao deletar despesa do usuário"}
+    
+@app.post("/simulate-retirement", tags=["Simulation"])
+async def simulate_retirement(user_id: int, retirement_age: int):
+    try:
+        session = Session()
+        user = session.query(User).filter(User.id == user_id).first()
+        if not user:
+            return {"error": "Usuário não encontrado"}
+        
+        portfolio = session.query(Portfolio).filter(Portfolio.user_id == user_id).first()
+        if not portfolio:
+            return {"error": "Portfólio do usuário não encontrado"}
+        
+        portfolio_positions = session.query(PortfolioPositions).filter(PortfolioPositions.portfolio_id == portfolio.id).all()
+        if not portfolio_positions:
+            return {"error": "Posições do portfólio não encontradas"}
+
+        portfolio_clean = []
+        for position in portfolio_positions:
+            portfolio_clean.append({
+                "amount": position.amount,
+                "asset": position.asset,
+                "indexer": position.indexer
+            })
+
+        incomes = session.query(UserIncome).filter(UserIncome.user_id == user_id).all()
+        expenses = session.query(UserExpense).filter(UserExpense.user_id == user_id).all()
+        
+        income_clean = []
+        for income in incomes:
+            income_clean.append({
+                "amount": income.amount,
+                "source": income.source
+            })
+            
+        expenses_clean = []
+        for expense in expenses:
+            expenses_clean.append({
+                "amount": expense.amount,
+                "category": expense.category.value
+            })
+            
+        
+        payload = {
+            "current_age": user.age,
+            "retirement_age": retirement_age,
+            "risk_profile": user.risk_profile,
+            "portfolio": portfolio_clean,
+            "incomes": income_clean,
+            "expenses": expenses_clean
+        }
+        
+        response = requests.post(
+            "http://retirement-simulator:8001/simulate-retirement",
+            json=payload
+        )
+        if response.status_code != 200:
+            return {"error": "Failed to get simulation results"}
+    
+        summary = summarize_sim(response.json())
+        return summary
+
+    except Exception as e:
+        print(f"Erro ao simular aposentadoria: {e}")
+        return {"error": "Falha ao simular aposentadoria"}
+
+@app.get("/economic-indicators", tags=["Simulation"])
+async def get_indicators():
+    try:
+        response = requests.get("http://retirement-simulator:8001/indicators")
+        if response.status_code == 200:
+            data = response.json()
+            return data
+        return None
+    except Exception as e:
+        print(f"Erro ao obter indicadores econômicos: {e}")
+        return None
+
+@app.post("/estimate-inss", tags=["Simulation"])
+async def estimate_inss(user_id: int, years_of_contribution: int):
+    try:
+        user_salary = Session().query(UserIncome).filter(UserIncome.user_id == user_id and UserIncome.source == "salary").all()
+        if not user_salary:
+            return None
+
+        salary = user_salary[0].amount
+        payload = {
+            "average_salary": salary,
+            "years_contributed": years_of_contribution,
+        }
+        print(payload)
+        response = requests.post(
+            "http://retirement-simulator:8001/estimate-inss",
+            json=payload
+        )
+        if response.status_code == 200:
+            data = response.json()
+            return data
+        return None
+    except Exception as e:
+        print(f"Erro ao estimar INSS: {e}")
+        return None
