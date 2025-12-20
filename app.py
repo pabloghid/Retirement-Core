@@ -369,7 +369,7 @@ async def estimate_inss(user_id: int, years_of_contribution: int):
             "average_salary": salary,
             "years_contributed": years_of_contribution,
         }
-        print(payload)
+
         response = requests.post(
             "http://retirement-simulator:8001/estimate-inss",
             json=payload
@@ -380,4 +380,23 @@ async def estimate_inss(user_id: int, years_of_contribution: int):
         return None
     except Exception as e:
         print(f"Erro ao estimar INSS: {e}")
+        return None
+    
+@app.post("/estimate-real-value", tags=["Simulation"])
+async def real_value(data: RealValueRequest):
+    try:
+        payload = {
+            "current_value": data.current_value,
+            "years": data.years
+        }
+        response = requests.post(
+            "http://retirement-simulator:8001/real-value",
+            json=payload
+        )
+        if response.status_code == 200:
+            data = response.json()
+            return data
+        return None
+    except Exception as e:
+        print(f"Erro ao estimar valor real: {e}")
         return None
