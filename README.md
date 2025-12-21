@@ -12,3 +12,5 @@ Banco Central do Brasil: utilizada rota SELIC
     - https://dadosabertos.bcb.gov.br/
 Yahoo Finances: Dados da ^BVSP
     - https://query1.finance.yahoo.com/v8/finance/chart/%5EBVSP
+
+![Diagrama da arquitetura](Retirement.png)
